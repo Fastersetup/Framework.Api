@@ -1,0 +1,16 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fastersetup.Framework.Api", "Fastersetup.Framework.Api\Fastersetup.Framework.Api.csproj", "{029A8A1A-876E-4169-98C5-172EC1915ECB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{029A8A1A-876E-4169-98C5-172EC1915ECB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{029A8A1A-876E-4169-98C5-172EC1915ECB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{029A8A1A-876E-4169-98C5-172EC1915ECB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{029A8A1A-876E-4169-98C5-172EC1915ECB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
