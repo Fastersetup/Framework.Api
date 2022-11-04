@@ -11,6 +11,8 @@
  * GNU General Public License for more details.
  */
 
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+
 namespace Fastersetup.Framework.Api.Attributes.Data {
 	/// <summary>
 	/// Marks a mapped property as a timestamp column with CURRENT_TIMESTAMP() default value
@@ -20,7 +22,7 @@ namespace Fastersetup.Framework.Api.Attributes.Data {
 	/// to recognize the property role
 	/// </remarks>
 	[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-	public class RowTimestampAttribute : Attribute {
+	public class RowTimestampAttribute : Attribute, IPropertyValidationFilter {
 		/// <summary>
 		/// Marks if the property gets renewed each row update
 		/// </summary>
@@ -31,6 +33,13 @@ namespace Fastersetup.Framework.Api.Attributes.Data {
 
 		public RowTimestampAttribute(bool setOnUpdate) {
 			SetOnUpdate = setOnUpdate;
+		}
+
+		/// <summary>
+		/// Validation is always ignored because the field cannot be set by the request
+		/// </summary>
+		public bool ShouldValidateEntry(ValidationEntry entry, ValidationEntry parentEntry) {
+			return false;
 		}
 	}
 }
