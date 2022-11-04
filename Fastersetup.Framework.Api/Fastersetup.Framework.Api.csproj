@@ -4,6 +4,14 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
     </PropertyGroup>
+    <PropertyGroup>
+        <PackageId>Fastersetup.Framework.Api</PackageId>
+        <Authors>francesco.cattoni</Authors>
+        <Company>Fastersetup</Company>
+        <Product>Framework</Product>
+        <Description>Smaller API framework to handle EFCore 6 REST applications with transparent data domains management</Description>
+        <PackageTags>webapi;aspnetcore;entity;framework;core;entity-framework-core;EntityFrameworkCore;EntityFramework;EF;Data;EFCore;rest</PackageTags>
+    </PropertyGroup>
     <!-- MVC -->
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.Mvc.DataAnnotations" Version="2.2.0" />
