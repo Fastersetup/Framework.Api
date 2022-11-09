@@ -16,7 +16,6 @@ using Fastersetup.Framework.Api.Controllers.Filtering;
 using Fastersetup.Framework.Api.Controllers.Models;
 using Fastersetup.Framework.Api.Services;
 using Fastersetup.Framework.Api.Services.Utilities;
-using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -47,7 +46,7 @@ namespace Fastersetup.Framework.Api {
 			return Ok(o);
 		}
 
-		private async Task TryAppendNavigationMetadata([NotNull] FilterModel filter, T o) {
+		private async Task TryAppendNavigationMetadata(FilterModel filter, T o) {
 			var q = PrepareQueryFilter(Source, filter, out _); // Force no Includes
 			if (q == null)
 				return;

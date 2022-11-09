@@ -20,12 +20,24 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 6.0.x
+          source-url: https://nuget.pkg.github.com/Fastersetup/index.json
+        env:
+          NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
       - name: Restore dependencies
         run: dotnet restore
       - name: Build
         run: dotnet build --no-restore
       - name: Test
         run: dotnet test --no-build --verbosity normal
+      - name: Pack (PR)
+        if: ${{ github.event_name == 'pull_request' }}
+        run: dotnet pack -c Release "/p:Version=${{ github.run_number }}-PR${{ github.event.pull_request.number }}" -o dev-artifacts
+      - name: Pack (Push)
+        if: ${{ github.event_name == 'push' }}
+        run: dotnet pack -c Release "/p:Version=${{ github.run_number }}-$(echo ${{ github.event.head_commit.id }} | cut -c -7)" -o dev-artifacts
+      - name: Publish dev
+        if: ${{ github.event_name != 'release' }}
+        run: dotnet nuget push 'dev-artifacts/*.nupkg'
   push:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'release' }}
