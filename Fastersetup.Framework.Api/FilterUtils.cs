@@ -148,8 +148,13 @@ namespace Fastersetup.Framework.Api {
 
 		public static BinaryExpression BuildComparisonFilterExpression(
 			this Expression member, object? value, bool greater, bool equal) {
-			var v = Expression.Constant(value, member.Type);
+			Expression v = Expression.Constant(value, member.Type);
 			// Unsupported binary equality (e.g. strings)
+			if (member.Type.IsEnum) {
+				var type = Enum.GetUnderlyingType(member.Type);
+				member = Expression.Convert(member, type);
+				v = Expression.Convert(v, type);
+			}
 			if (_compareToMethods.TryGetValue(member.Type, out var compareToMethod)) {
 				/*member = Expression.Call(null, _stringCompare,
 					member, v, Expression.Constant(StringComparison.Ordinal, typeof(StringComparison)));*/
