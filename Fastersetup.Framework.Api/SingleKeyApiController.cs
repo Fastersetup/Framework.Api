@@ -21,11 +21,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Fastersetup.Framework.Api {
-	public abstract class SingleKeyApiControllerBase<T, TPk> : ApiControllerBase<T> where T : class, new() {
+	public abstract class SingleKeyApiController<T, TPk> : ApiController<T> where T : class, new() {
 		private readonly DbContext _context;
 		private readonly FilteringService _filteringService;
 
-		public SingleKeyApiControllerBase(DbContext context, FilteringService filteringService, IObjectUtils utils,
+		public SingleKeyApiController(DbContext context, FilteringService filteringService, IObjectUtils utils,
 			ILogger logger, IAccessControlService<T>? aclService = null)
 			: base(context, filteringService, utils, logger, aclService) {
 			_context = context;
