@@ -22,7 +22,6 @@ using Microsoft.EntityFrameworkCore;
 namespace Fastersetup.Framework.Api {
 	public abstract class ReadonlyApiController<TModel> : ControllerBase
 		where TModel : class, new() {
-		private readonly DbContext _context;
 		private readonly FilteringService _filteringService;
 
 		public delegate bool ValueDeserializer(string? value, out IComparable? result);
@@ -35,10 +34,12 @@ namespace Fastersetup.Framework.Api {
 		protected virtual IQueryable<TModel> ListSource => UntrackedSource;
 		protected virtual IQueryable<TModel> CrudSource => UntrackedSource;
 
-		public ReadonlyApiController(DbContext context, FilteringService filteringService) {
-			_context = context;
+		protected ReadonlyApiController(FilteringService filteringService) {
 			_filteringService = filteringService;
 		}
+
+		/// <remarks>The collection MUST be always not empty</remarks>
+		protected abstract IEnumerable<PropertyOrder> EnumerateDefaultOrderBy();
 
 		protected virtual void RegisterConversion<T>(ValueDeserializer<T> converter) where T : struct {
 			Conversions.Add(typeof(T), (string? value, out IComparable? result) => {
@@ -95,24 +96,6 @@ namespace Fastersetup.Framework.Api {
 			return _filteringService.TryGetPropertyPath(name, typeof(TModel), parameter, out exp, out propertyType)
 				? null
 				: BadRequest(new ErrorResponse($"Invalid property name \"{name}\""));
-		}
-
-		/// <remarks>The collection MUST be always not empty</remarks>
-		protected virtual IEnumerable<PropertyOrder> EnumerateDefaultOrderBy() {
-			return _context.Model.RequireEntityType(typeof(TModel))
-				.RequirePrimaryKey()
-				.Properties
-				.Select(p => {
-					var m = p.GetMember();
-					return m == null
-						? null
-						: new PropertyOrder() {
-							Name = m.Name,
-							Order = SortOrder.ASC,
-							CachedProperty = p
-						};
-				})
-				.Where(p => p != null)!;
 		}
 
 		protected IQueryable<TModel>? PrepareQueryFilter(IQueryable<TModel> q, FilterModel filter,

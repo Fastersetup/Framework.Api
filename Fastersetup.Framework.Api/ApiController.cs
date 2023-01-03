@@ -13,6 +13,7 @@
 
 using System.Linq.Expressions;
 using Fastersetup.Framework.Api.Context;
+using Fastersetup.Framework.Api.Controllers.Filtering;
 using Fastersetup.Framework.Api.Controllers.Models;
 using Fastersetup.Framework.Api.Data;
 using Fastersetup.Framework.Api.Services;
@@ -46,7 +47,7 @@ namespace Fastersetup.Framework.Api {
 		protected IAccessControlService<TModel>? Acl => _aclService;
 
 		public ApiController(DbContext context, FilteringService filteringService, IObjectUtils utils,
-			ILogger logger, IAccessControlService<TModel>? aclService = null) : base(context, filteringService) {
+			ILogger logger, IAccessControlService<TModel>? aclService = null) : base(filteringService) {
 			_context = context;
 			Utils = utils;
 			_aclService = aclService;
@@ -73,6 +74,23 @@ namespace Fastersetup.Framework.Api {
 
 		protected virtual Task<TModel> CopyNavigationProperties(TModel source, TModel target) {
 			return Task.FromResult(target);
+		}
+		
+		protected override IEnumerable<PropertyOrder> EnumerateDefaultOrderBy() {
+			return _context.Model.RequireEntityType(typeof(TModel))
+				.RequirePrimaryKey()
+				.Properties
+				.Select(p => {
+					var m = p.GetMember();
+					return m == null
+						? null
+						: new PropertyOrder() {
+							Name = m.Name,
+							Order = SortOrder.ASC,
+							CachedProperty = p
+						};
+				})
+				.Where(p => p != null)!;
 		}
 
 		protected virtual Task<TModel?> Resolve(IQueryable<TModel> q, TModel reference, out object[] pks) {
