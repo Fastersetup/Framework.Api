@@ -105,7 +105,7 @@ namespace Fastersetup.Framework.Api {
 				error = TryGetPropertyPath(f.Name, parameter, out var accessor, out var propertyType);
 				if (error != null)
 					return null;
-
+				var extended = f.Extended ?? false;
 				if (f.Values is {Count: > 0}) {
 					Expression? exp = null;
 					/***
@@ -119,7 +119,7 @@ namespace Fastersetup.Framework.Api {
 					 * Build comparison expression
 					 */
 					foreach (var value in f.Values) {
-						if (!_filteringService.TryBuildFilterExpression(f.Name, f.Action, value,
+						if (!_filteringService.TryBuildFilterExpression(f.Name, f.Action, value, extended,
 							ToComparable, accessor, propertyType, out var expression, out var errorMessage)) {
 							error = Conflict(new ErrorResponse(errorMessage ?? string.Empty));
 							return null;
@@ -139,7 +139,7 @@ namespace Fastersetup.Framework.Api {
 					/***
 					 * Build comparison expression
 					 */
-					if (!_filteringService.TryBuildFilterExpression(f.Name, f.Action, f.Value,
+					if (!_filteringService.TryBuildFilterExpression(f.Name, f.Action, f.Value, extended,
 						ToComparable, accessor, propertyType, out var expression, out var errorMessage)) {
 						error = Conflict(new ErrorResponse(errorMessage ?? string.Empty));
 						return null;
@@ -153,7 +153,8 @@ namespace Fastersetup.Framework.Api {
 			return q;
 		}
 
-		protected IQueryable<TModel>? AppendSorting(IQueryable<TModel> q, FilterModel filter, out IActionResult? error) {
+		protected IQueryable<TModel>?
+			AppendSorting(IQueryable<TModel> q, FilterModel filter, out IActionResult? error) {
 			var entries =
 				(filter.Order is {Count: > 0} ? filter.Order : EnumerateDefaultOrderBy()).ToImmutableList();
 			var p = Expression.Parameter(typeof(TModel), "o");

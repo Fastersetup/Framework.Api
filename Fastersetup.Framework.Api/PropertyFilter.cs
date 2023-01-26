@@ -17,6 +17,7 @@ namespace Fastersetup.Framework.Api {
 	public class PropertyFilter {
 		public string Name { get; set; }
 		public FilterAction Action { get; set; } = FilterAction.StartsWith;
+		public bool? Extended { get; set; }
 		public string? Value { get; set; }
 		public IList<string?>? Values { get; set; }
 	}
