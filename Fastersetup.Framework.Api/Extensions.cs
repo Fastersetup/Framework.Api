@@ -14,10 +14,12 @@
 using System.Reflection;
 using System.Text;
 using Fastersetup.Framework.Api.Attributes.Data;
+using Fastersetup.Framework.Api.Controllers.Injection;
 using Fastersetup.Framework.Api.Data;
 using Fastersetup.Framework.Api.Services;
 using Fastersetup.Framework.Api.Services.Default;
 using Fastersetup.Framework.Api.Services.Utilities;
+using Microsoft.AspNetCore.Mvc.Internal;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -69,6 +71,19 @@ public static class Extensions {
 			.AddTransient<FilteringService>()
 			.AddTransient<IObjectUtils, ObjectUtils>()
 			.AddHttpContextAccessor();
+		return services;
+	}
+
+	public static IServiceCollection AddFastersetupControllerInjectors(this IServiceCollection services) {
+		void Register<T>() where T : class, IControllerPropertyActivator {
+			services.TryAddEnumerable(ServiceDescriptor.Transient<IControllerPropertyActivator, T>());
+		}
+
+		Register<ACLServiceControllerInjector>();
+		Register<DbContextControllerInjector>();
+		Register<FilteringServiceControllerInjector>();
+		Register<LoggerControllerInjector>();
+		Register<ObjectUtilsControllerInjector>();
 		return services;
 	}
 
