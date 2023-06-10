@@ -49,7 +49,7 @@ namespace Fastersetup.Framework.Api.Services.Default {
 
 		public void MergeCollection<T, TKey>(
 			ICollection<T> currentItems, IEnumerable<T>? newItems, Func<T, TKey> keyFunc, Action<T, T>? merge = null,
-			bool allowAdd = true, bool allowRemove = true)
+			bool deleteRemovedObjects = true, bool allowAdd = true, bool allowRemove = true)
 			where TKey : notnull where T : class, new() {
 			MergeCollection(currentItems, newItems, keyFunc, item => {
 				var i = Copy(item, new T());
@@ -61,12 +61,12 @@ namespace Fastersetup.Framework.Api.Services.Default {
 					merge(found, Copy(found, existing));
 				else
 					Copy(found, existing);
-			}, o => o, allowAdd, allowRemove);
+			}, o => o, deleteRemovedObjects, allowAdd, allowRemove);
 		}
 
 		public ValueTask MergeCollectionAsync<T, TKey>(
 			ICollection<T> currentItems, IEnumerable<T>? newItems, Func<T, TKey> keyFunc,
-			Func<T, T, CancellationToken, ValueTask>? merge = null,
+			Func<T, T, CancellationToken, ValueTask>? merge = null, bool deleteRemovedObjects = true,
 			bool allowAdd = true, bool allowRemove = true, CancellationToken cancellationToken = default)
 			where TKey : notnull where T : class, new() {
 			return MergeCollectionAsync(currentItems, newItems, keyFunc, async (item, token) => {
@@ -80,7 +80,7 @@ namespace Fastersetup.Framework.Api.Services.Default {
 					await merge(found, Copy(found, existing), token);
 				else
 					Copy(found, existing);
-			}, (o, _) => ValueTask.FromResult<T?>(o), allowAdd, allowRemove, cancellationToken);
+			}, (o, _) => ValueTask.FromResult<T?>(o), deleteRemovedObjects, allowAdd, allowRemove, cancellationToken);
 		}
 
 		public ValueTask MergeReferenceCollectionAsync<T, TKey>(
@@ -91,7 +91,7 @@ namespace Fastersetup.Framework.Api.Services.Default {
 				(item, token) => _context.ResolveAsync(item, token),
 				(_, _, _) => ValueTask.CompletedTask,
 				(item, token) => _context.ResolveAsync(item, token),
-				allowAdd, allowRemove, cancellationToken);
+				false, allowAdd, allowRemove, cancellationToken);
 		}
 
 		private void MergeCollection<T, TKey>(
@@ -99,6 +99,7 @@ namespace Fastersetup.Framework.Api.Services.Default {
 			Func<T, T?> toAdd,
 			Action<T, T> foundExisting,
 			Func<T, T?> resolve,
+			bool deleteRemovedObjects,
 			bool allowAdd = true, bool allowRemove = true) where TKey : notnull where T : class {
 			if (newItems == null)
 				return;
@@ -127,7 +128,8 @@ namespace Fastersetup.Framework.Api.Services.Default {
 			if (allowRemove && removed != null)
 				foreach (var item in removed) {
 					currentItems.Remove(item);
-					_context.Remove(item);
+					if (deleteRemovedObjects)
+						_context.Remove(item);
 				}
 
 			if (allowAdd && added != null)
@@ -147,6 +149,7 @@ namespace Fastersetup.Framework.Api.Services.Default {
 			Func<T, CancellationToken, ValueTask<T?>> toAdd,
 			Func<T, T, CancellationToken, ValueTask> foundExisting,
 			Func<T, CancellationToken, ValueTask<T?>> resolve,
+			bool deleteRemovedObjects,
 			bool allowAdd = true, bool allowRemove = true, CancellationToken token = default)
 			where TKey : notnull where T : class {
 			if (newItems == null)
@@ -176,7 +179,8 @@ namespace Fastersetup.Framework.Api.Services.Default {
 			if (allowRemove && removed != null)
 				foreach (var item in removed) {
 					currentItems.Remove(item);
-					_context.Remove(item);
+					if (deleteRemovedObjects)
+						_context.Remove(item);
 				}
 
 			if (allowAdd && added != null)
