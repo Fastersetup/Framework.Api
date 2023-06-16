@@ -20,13 +20,14 @@ namespace Fastersetup.Framework.Api.Services.Utilities {
 		IEqualityComparer<T> GetEqualityComparer<T>() where T : class;
 
 		void MergeCollection<T, TKey>(ICollection<T> currentItems, IEnumerable<T>? newItems, Func<T, TKey> keyFunc,
-			Action<T, T>? merge = null, bool allowAdd = true, bool allowRemove = true)
+			Action<T, T>? merge = null, bool deleteRemovedObjects = true, bool allowAdd = true, bool allowRemove = true)
 			where TKey : notnull
 			where T : class, new();
 
 		ValueTask MergeCollectionAsync<T, TKey>(ICollection<T> currentItems, IEnumerable<T>? newItems,
 			Func<T, TKey> keyFunc,
-			Func<T, T, CancellationToken, ValueTask>? merge = null, bool allowAdd = true, bool allowRemove = true,
+			Func<T, T, CancellationToken, ValueTask>? merge = null,
+			bool deleteRemovedObjects = true, bool allowAdd = true, bool allowRemove = true,
 			CancellationToken token = default)
 			where TKey : notnull
 			where T : class, new();

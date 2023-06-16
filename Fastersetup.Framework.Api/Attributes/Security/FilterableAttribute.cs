@@ -15,7 +15,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Fastersetup.Framework.Api.Attributes.Security {
 	/// <summary>
-	/// Attribute to mark filterable properties exposed through a defined <see cref="ApiControllerBase{TModel}"/> implementation
+	/// Attribute to mark filterable properties exposed through a defined <see cref="ApiController{TModel}"/> implementation
 	/// </summary>
 	public class FilterableAttribute : Attribute, IAnnotation {
 		public string Name => "FSFilterable";

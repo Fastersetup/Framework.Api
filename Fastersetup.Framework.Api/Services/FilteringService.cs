@@ -37,8 +37,9 @@ namespace Fastersetup.Framework.Api.Services {
 			_logger = logger;
 		}
 
-		public bool TryBuildFilterExpression(string name, FilterAction action, string? value, ToComparable toComparable,
-			Expression? accessor, Type propertyType, out Expression? result, out string? errorMessage) {
+		public bool TryBuildFilterExpression(string name, FilterAction action, string? value, bool extended,
+			ToComparable toComparable, Expression? accessor, Type propertyType, out Expression? result,
+			out string? errorMessage) {
 			errorMessage = null;
 			switch (action) {
 				case FilterAction.Exists:
@@ -55,13 +56,13 @@ namespace Fastersetup.Framework.Api.Services {
 						accessor.BuildEqualsFilterExpression("", typeof(string)));
 					return true;
 				case FilterAction.StartsWith:
-					result = Stringify(accessor).BuildLikeFilterExpression(value, false, true);
+					result = Stringify(accessor).BuildLikeFilterExpression(value, false, true, !extended);
 					return true;
 				case FilterAction.Contains:
-					result = Stringify(accessor).BuildLikeFilterExpression(value, true, true);
+					result = Stringify(accessor).BuildLikeFilterExpression(value, true, true, !extended);
 					return true;
 				case FilterAction.EndsWith:
-					result = Stringify(accessor).BuildLikeFilterExpression(value, true, false);
+					result = Stringify(accessor).BuildLikeFilterExpression(value, true, false, !extended);
 					return true;
 				case FilterAction.Equals:
 					if (accessor.Type.IsEnum)

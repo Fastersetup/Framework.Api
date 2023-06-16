@@ -93,14 +93,16 @@ namespace Fastersetup.Framework.Api {
 				.Invoke(null, new object?[] {expression, parameter, value});
 		}
 
-		private static string PrepareFilter(string s, bool before, bool after) {
+		private static string PrepareFilter(string s, bool before, bool after, bool escape) {
 			var idx = -1;
 			var offset = 0;
 			var sb = new StringBuilder(s);
-			// Projecting the original string indexes onto the altered StringBuilder by keeping track of the
-			// added character number and considering it while calculating the next escape character position
-			while ((idx = s.IndexOfAny(Wildcards, idx + 1)) >= 0)
-				sb.Insert(idx + offset++, WildcardEscapeChar); // Add escape string before character
+			if (escape) {
+				// Projecting the original string indexes onto the altered StringBuilder by keeping track of the
+				// added character number and considering it while calculating the next escape character position
+				while ((idx = s.IndexOfAny(Wildcards, idx + 1)) >= 0)
+					sb.Insert(idx + offset++, WildcardEscapeChar); // Add escape string before character
+			}
 
 			if (before)
 				sb.Insert(0, '%');
@@ -110,11 +112,11 @@ namespace Fastersetup.Framework.Api {
 		}
 
 		public static MethodCallExpression BuildLikeFilterExpression(
-			this Expression member, string filter, bool before, bool after) {
+			this Expression member, string filter, bool before, bool after, bool escape) {
 			return Expression.Call(null, _likeMethod,
 				Expression.Property(null, _efFunctions),
 				member,
-				Expression.Constant(PrepareFilter(filter, before, after), typeof(string)),
+				Expression.Constant(PrepareFilter(filter, before, after, escape), typeof(string)),
 				Expression.Constant(WildcardEscapeChar.ToString(), typeof(string)));
 		}
 
@@ -155,6 +157,7 @@ namespace Fastersetup.Framework.Api {
 				member = Expression.Convert(member, type);
 				v = Expression.Convert(v, type);
 			}
+
 			if (_compareToMethods.TryGetValue(member.Type, out var compareToMethod)) {
 				/*member = Expression.Call(null, _stringCompare,
 					member, v, Expression.Constant(StringComparison.Ordinal, typeof(StringComparison)));*/
@@ -173,9 +176,9 @@ namespace Fastersetup.Framework.Api {
 		}
 
 		public static Expression<Func<T, bool>> BuildLikeFilter<T>(
-			this Expression member, ParameterExpression parameter, string filter, bool before, bool after) {
+			this Expression member, ParameterExpression parameter, string filter, bool before, bool after, bool escape = true) {
 			return Expression.Lambda<Func<T, bool>>(
-				member.BuildLikeFilterExpression(filter, before, after), parameter);
+				member.BuildLikeFilterExpression(filter, before, after, escape), parameter);
 		}
 
 		public static Expression<Func<T, bool>> BuildEqualsFilter<T>(this Expression member,

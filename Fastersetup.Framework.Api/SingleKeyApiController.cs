@@ -21,11 +21,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Fastersetup.Framework.Api {
-	public abstract class SingleKeyApiControllerBase<T, TPk> : ApiControllerBase<T> where T : class, new() {
+	public abstract class SingleKeyApiController<T, TPk> : ApiController<T> where T : class, new() {
 		private readonly DbContext _context;
 		private readonly FilteringService _filteringService;
 
-		public SingleKeyApiControllerBase(DbContext context, FilteringService filteringService, IObjectUtils utils,
+		public SingleKeyApiController(DbContext context, FilteringService filteringService, IObjectUtils utils,
 			ILogger logger, IAccessControlService<T>? aclService = null)
 			: base(context, filteringService, utils, logger, aclService) {
 			_context = context;
@@ -35,7 +35,7 @@ namespace Fastersetup.Framework.Api {
 		protected abstract Expression<Func<T, bool>> ResolvePkExpression(TPk pk); // Could get it with reflection
 
 		[HttpGet("{id}")]
-		public async Task<IActionResult> Get([FromRoute] TPk id, [FromQuery] FilterModel? filter = null) {
+		public virtual async Task<IActionResult> Get([FromRoute] TPk id, [FromQuery] FilterModel? filter = null) {
 			var o = await ReadSource.FirstOrDefaultAsync(ResolvePkExpression(id), HttpContext.RequestAborted);
 			if (Acl != null)
 				await Acl.Read(o);
@@ -46,7 +46,7 @@ namespace Fastersetup.Framework.Api {
 			return Ok(o);
 		}
 
-		private async Task TryAppendNavigationMetadata(FilterModel filter, T o) {
+		protected virtual async Task TryAppendNavigationMetadata(FilterModel filter, T o) {
 			var q = PrepareQueryFilter(Source, filter, out _); // Force no Includes
 			if (q == null)
 				return;
