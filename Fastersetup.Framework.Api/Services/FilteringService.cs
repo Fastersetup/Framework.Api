@@ -1,10 +1,10 @@
 /*
  * Copyright 2022 Francesco Cattoni
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * version 3 as published by the Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
@@ -12,19 +12,18 @@
  */
 
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
-using Fastersetup.Framework.Api.Attributes;
 using Fastersetup.Framework.Api.Attributes.Security;
 using Fastersetup.Framework.Api.Controllers.Filtering;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.Logging;
 
 namespace Fastersetup.Framework.Api.Services {
-	public delegate bool ToComparable(Expression member, string value, out IComparable? result);
+	public delegate bool ToComparable(Expression member, string? value, out IComparable? result);
 
 	public class FilteringService {
 		private const string InvalidActionMessage = "Unsupported action {0} performed on property \"{1}\"";
@@ -38,7 +37,7 @@ namespace Fastersetup.Framework.Api.Services {
 		}
 
 		public bool TryBuildFilterExpression(string name, FilterAction action, string? value, bool extended,
-			ToComparable toComparable, Expression? accessor, Type propertyType, out Expression? result,
+			ToComparable toComparable, Expression accessor, Type propertyType, out Expression? result,
 			out string? errorMessage) {
 			errorMessage = null;
 			switch (action) {
@@ -56,13 +55,13 @@ namespace Fastersetup.Framework.Api.Services {
 						accessor.BuildEqualsFilterExpression("", typeof(string)));
 					return true;
 				case FilterAction.StartsWith:
-					result = Stringify(accessor).BuildLikeFilterExpression(value, false, true, !extended);
+					result = Stringify(accessor).BuildLikeFilterExpression(value ?? "", false, true, !extended);
 					return true;
 				case FilterAction.Contains:
-					result = Stringify(accessor).BuildLikeFilterExpression(value, true, true, !extended);
+					result = Stringify(accessor).BuildLikeFilterExpression(value ?? "", true, true, !extended);
 					return true;
 				case FilterAction.EndsWith:
-					result = Stringify(accessor).BuildLikeFilterExpression(value, true, false, !extended);
+					result = Stringify(accessor).BuildLikeFilterExpression(value ?? "", true, false, !extended);
 					return true;
 				case FilterAction.Equals:
 					if (accessor.Type.IsEnum)
@@ -152,15 +151,15 @@ namespace Fastersetup.Framework.Api.Services {
 			});
 		}
 
-		public bool TryGetPropertyPath(string name, Type baseType,
-			ParameterExpression parameter, out Expression exp, out Type propertyType) {
+		public bool TryGetPropertyPath(string name, Type baseType, ParameterExpression parameter,
+			[NotNullWhen(true)] out Expression? exp, [NotNullWhen(true)] out Type? propertyType) {
 			if (name.Length > 0 && name[0] == '.')
 				name = name[1..];
 			return TryGetPropertyPath(null, name, baseType, parameter, out exp, out propertyType);
 		}
 
-		private bool TryGetPropertyPath(string prefix, string name, Type baseType,
-			Expression parameter, out Expression exp, out Type propertyType) {
+		private bool TryGetPropertyPath(string? prefix, string name, Type baseType,
+			Expression parameter, [NotNullWhen(true)] out Expression? exp, [NotNullWhen(true)] out Type? propertyType) {
 			var prefixed = prefix == null ? name : $"{prefix}.{name}";
 			var idx = name.IndexOf('.');
 			if (idx < 0) {
@@ -205,7 +204,7 @@ namespace Fastersetup.Framework.Api.Services {
 		private static readonly MethodInfo StrConcatMethod = new Func<string[], string>(string.Concat).Method;
 
 		private (Expression, Type)? Branch(Expression source,
-			Type type, bool allowNavigation, string name, StringBuilder partialPath, string fullPath) {
+			Type type, bool allowNavigation, string name, StringBuilder? partialPath, string fullPath) {
 			if (name[0] == '[' && name[^1] == ']') {
 				var parts = name[1..^1].Split(',');
 				var values = new Expression[parts.Length];
@@ -230,11 +229,11 @@ namespace Fastersetup.Framework.Api.Services {
 			}
 
 			var e = NavigateInto(source, p.PropertyInfo!);
-			return (e, p.PropertyInfo.PropertyType);
+			return (e, p.PropertyInfo!.PropertyType);
 		}
 
 		private IReadOnlyPropertyBase?
-			ExploreProperty(Type type, string name, StringBuilder partialPath, string fullPath) {
+			ExploreProperty(Type type, string name, StringBuilder? partialPath, string fullPath) {
 			if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ICollection<>)) {
 				if (partialPath == null)
 					_logger.LogInformation(
@@ -259,7 +258,7 @@ namespace Fastersetup.Framework.Api.Services {
 				return null;
 			}
 
-			var prop = (IReadOnlyPropertyBase) entity.FindNavigation(name) ?? entity.FindProperty(name);
+			var prop = (IReadOnlyPropertyBase?) entity.FindNavigation(name) ?? entity.FindProperty(name);
 			if (prop == null) {
 				if (partialPath == null)
 					_logger.LogInformation("Referenced unknown property {PropertyName} ({FullPropertyPath})",
@@ -275,7 +274,7 @@ namespace Fastersetup.Framework.Api.Services {
 		}
 
 		private bool ValidateNavigation(
-			IReadOnlyPropertyBase p, bool allowNavigation, StringBuilder partialPath, string fullPath) {
+			IReadOnlyPropertyBase p, bool allowNavigation, StringBuilder? partialPath, string fullPath) {
 			if (!allowNavigation && p is INavigation) {
 				if (partialPath == null)
 					_logger.LogInformation(
@@ -318,7 +317,7 @@ namespace Fastersetup.Framework.Api.Services {
 			return true;
 		}
 
-		public MemberExpression NavigateInto([NotNull] Expression source, [NotNull] PropertyInfo property) {
+		public MemberExpression NavigateInto(Expression source, PropertyInfo property) {
 			return Expression.MakeMemberAccess(source, property);
 		}
 

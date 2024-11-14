@@ -1,10 +1,10 @@
 /*
  * Copyright 2022 Francesco Cattoni
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * version 3 as published by the Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
@@ -12,6 +12,7 @@
  */
 
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using Fastersetup.Framework.Api.Controllers.Filtering;
 using Fastersetup.Framework.Api.Controllers.Models;
@@ -80,7 +81,7 @@ namespace Fastersetup.Framework.Api {
 			RegisterConversion((string? value, out decimal result) => decimal.TryParse(value, out result));
 		}
 
-		protected virtual bool ToComparable(Expression member, string value, out IComparable? result) {
+		protected virtual bool ToComparable(Expression member, string? value, out IComparable? result) {
 			if (Conversions.Count == 0)
 				RegisterConverters();
 			if (!Conversions.TryGetValue(member.Type, out var converter)) {
@@ -91,19 +92,23 @@ namespace Fastersetup.Framework.Api {
 			return converter(value, out result);
 		}
 
-		private IActionResult? TryGetPropertyPath(string name, ParameterExpression parameter,
-			out Expression exp, out Type propertyType) {
-			return _filteringService.TryGetPropertyPath(name, typeof(TModel), parameter, out exp, out propertyType)
-				? null
-				: BadRequest(new ErrorResponse($"Invalid property name \"{name}\""));
+		private bool TryGetPropertyPath(string name, ParameterExpression parameter,
+			[NotNullWhen(false)] out IActionResult? error,
+			[NotNullWhen(true)] out Expression? exp, [NotNullWhen(true)] out Type? propertyType) {
+			if (!_filteringService.TryGetPropertyPath(name, typeof(TModel), parameter, out exp, out propertyType)) {
+				error = BadRequest(new ErrorResponse($"Invalid property name \"{name}\""));
+				return false;
+			}
+
+			error = null;
+			return true;
 		}
 
 		protected IQueryable<TModel>? PrepareQueryFilter(IQueryable<TModel> q, FilterModel filter,
 			out IActionResult? error) {
 			foreach (var f in filter.Filters ?? Enumerable.Empty<PropertyFilter>()) {
 				var parameter = Expression.Parameter(typeof(TModel), "o");
-				error = TryGetPropertyPath(f.Name, parameter, out var accessor, out var propertyType);
-				if (error != null)
+				if (!TryGetPropertyPath(f.Name, parameter, out error, out var accessor, out var propertyType))
 					return null;
 				var extended = f.Extended ?? false;
 				if (f.Values is {Count: > 0}) {
@@ -120,7 +125,7 @@ namespace Fastersetup.Framework.Api {
 					 */
 					foreach (var value in f.Values) {
 						if (!_filteringService.TryBuildFilterExpression(f.Name, f.Action, value, extended,
-							ToComparable, accessor, propertyType, out var expression, out var errorMessage)) {
+							    ToComparable, accessor, propertyType, out var expression, out var errorMessage)) {
 							error = Conflict(new ErrorResponse(errorMessage ?? string.Empty));
 							return null;
 						}
@@ -140,7 +145,7 @@ namespace Fastersetup.Framework.Api {
 					 * Build comparison expression
 					 */
 					if (!_filteringService.TryBuildFilterExpression(f.Name, f.Action, f.Value, extended,
-						ToComparable, accessor, propertyType, out var expression, out var errorMessage)) {
+						    ToComparable, accessor, propertyType, out var expression, out var errorMessage)) {
 						error = Conflict(new ErrorResponse(errorMessage ?? string.Empty));
 						return null;
 					}
@@ -158,11 +163,8 @@ namespace Fastersetup.Framework.Api {
 			var entries =
 				(filter.Order is {Count: > 0} ? filter.Order : EnumerateDefaultOrderBy()).ToImmutableList();
 			var p = Expression.Parameter(typeof(TModel), "o");
-			var r = TryGetPropertyPath(entries[0].Name, p, out var exp, out var propertyType);
-			if (r != null) {
-				error = r;
+			if (!TryGetPropertyPath(entries[0].Name, p, out error, out var exp, out var propertyType))
 				return null;
-			}
 
 			/*if (propertyType == typeof(string))
 				exp = Expression.Call(exp,
@@ -172,11 +174,8 @@ namespace Fastersetup.Framework.Api {
 			if (entries.Count > 1)
 				foreach (var entry in entries.Skip(1)) {
 					p = Expression.Parameter(typeof(TModel), "o");
-					r = TryGetPropertyPath(entry.Name, p, out exp, out propertyType);
-					if (r != null) {
-						error = r;
+					if (!TryGetPropertyPath(entry.Name, p, out error, out exp, out propertyType))
 						return null;
-					}
 
 					/*if (propertyType == typeof(string))
 						exp = Expression.Call(exp,

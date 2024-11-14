@@ -1,20 +1,20 @@
 /*
  * Copyright 2022 Francesco Cattoni
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * version 3 as published by the Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
 
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 using Fastersetup.Framework.Api.Context;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
@@ -26,7 +26,7 @@ namespace Fastersetup.Framework.Api {
 		/// If no <typeparamref name="T"/> instance can be resolved with the extracted keys the <paramref name="item"/>
 		/// instance will be added to <paramref name="context"/>
 		/// </summary>
-		[ContractAnnotation("item: null => null")]
+		[return: NotNullIfNotNull(nameof(item))]
 		public static T? Resolve<T>(this DbContext context, T? item) where T : class {
 			if (item == null)
 				return item;
@@ -73,12 +73,21 @@ namespace Fastersetup.Framework.Api {
 			where T : class {
 			var p = Expression.Parameter(typeof(T), "o");
 			var properties = pk.Properties;
-			var e = Expression.MakeMemberAccess(p, properties[0].GetMember())
+			var member = properties[0].GetMember();
+			if (member == null)
+				throw new NotSupportedException(
+					$"No member found for primary key property {properties[0].DeclaringType.Name}.{properties[0].Name}");
+			var e = Expression.MakeMemberAccess(p, member)
 				.BuildEqualsFilterExpression(keys[0]);
 			if (properties.Count > 1)
-				for (var i = 1; i < properties.Count; i++)
-					e = Expression.And(e, Expression.MakeMemberAccess(p, properties[i].GetMember())
+				for (var i = 1; i < properties.Count; i++) {
+					member = properties[i].GetMember();
+					if (member == null)
+						throw new NotSupportedException(
+							$"No member found for primary key property {properties[i].DeclaringType.Name}.{properties[i].Name}");
+					e = Expression.And(e, Expression.MakeMemberAccess(p, member)
 						.BuildEqualsFilterExpression(keys[i]));
+				}
 
 			return Expression.Lambda<Func<T, bool>>(e, p);
 		}

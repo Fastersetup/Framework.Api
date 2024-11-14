@@ -1,10 +1,10 @@
 /*
  * Copyright 2022 Francesco Cattoni
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * version 3 as published by the Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
@@ -18,7 +18,6 @@ using Fastersetup.Framework.Api.Controllers.Models;
 using Fastersetup.Framework.Api.Data;
 using Fastersetup.Framework.Api.Services;
 using Fastersetup.Framework.Api.Services.Utilities;
-using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -32,7 +31,6 @@ namespace Fastersetup.Framework.Api {
 		private readonly IAccessControlService<TModel>? _aclService;
 		private readonly ILogger _logger;
 
-		[NotNull]
 		protected virtual DbSet<TModel> Set => _context.Set<TModel>();
 		protected virtual ContextualDbSet<TModel>? ContextualSet =>
 			Contextualize && _context is IContextualDbContext contextual
@@ -54,15 +52,18 @@ namespace Fastersetup.Framework.Api {
 			_logger = logger;
 		}
 
-		protected virtual (string Name, object Value)[] GetPrimaryKeysRef(TModel model) {
+		protected virtual (string Name, object? Value)[] GetPrimaryKeysRef(TModel model) {
 			var props = _context.Model.RequirePrimaryKey(typeof(TModel)).Properties;
-			var keys = new (string Name, object Value)[props.Count];
+			var keys = new (string Name, object? Value)[props.Count];
 			for (var i = 0; i < props.Count; i++) {
 				var key = props[i];
 				if (key.FieldInfo != null)
 					keys[i] = (key.Name, key.FieldInfo.GetValue(model));
-				else
+				else if (key.PropertyInfo != null)
 					keys[i] = (key.Name, key.PropertyInfo.GetValue(model));
+				else
+					throw new NotSupportedException(
+						$"Unsupported key type found {key.Name} ({key.ClrType}) of type {key.GetType().FullName}");
 			}
 
 			return keys;
@@ -75,7 +76,7 @@ namespace Fastersetup.Framework.Api {
 		protected virtual Task<TModel> CopyNavigationProperties(TModel source, TModel target) {
 			return Task.FromResult(target);
 		}
-		
+
 		protected override IEnumerable<PropertyOrder> EnumerateDefaultOrderBy() {
 			return _context.Model.RequireEntityType(typeof(TModel))
 				.RequirePrimaryKey()
@@ -93,13 +94,13 @@ namespace Fastersetup.Framework.Api {
 				.Where(p => p != null)!;
 		}
 
-		protected virtual Task<TModel?> Resolve(IQueryable<TModel> q, TModel reference, out object[] pks) {
+		protected virtual Task<TModel?> Resolve(IQueryable<TModel> q, TModel reference, out object?[] pks) {
 			var r = GetPrimaryKeysRef(reference);
 			var p = Expression.Parameter(typeof(TModel), "o");
 			// var e = Expression.MakeMemberAccess(p, r[0].Member)
 			var e = Expression.PropertyOrField(p, r[0].Name)
 				.BuildEqualsFilterExpression(r[0].Value);
-			pks = new object[r.Length];
+			pks = new object?[r.Length];
 			pks[0] = r[0].Value;
 			if (r.Length > 1)
 				for (var i = 1; i < r.Length; i++) {

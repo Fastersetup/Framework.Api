@@ -1,10 +1,10 @@
 /*
  * Copyright 2022 Francesco Cattoni
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * version 3 as published by the Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
@@ -65,8 +65,9 @@ namespace Fastersetup.Framework.Api {
 				Expression source;
 				if (property.CachedProperty == null) {
 					if (!_filteringService.TryGetPropertyPath(property.Name, typeof(T), parameter,
-						out source, out var type))
+						    out var s, out var type))
 						return;
+					source = s;
 					// Cache compiled lambda?
 					value = source.EvaluateGet(parameter, type, o);
 				} else {
