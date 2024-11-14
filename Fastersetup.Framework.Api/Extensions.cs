@@ -1,10 +1,10 @@
 /*
  * Copyright 2022 Francesco Cattoni
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * version 3 as published by the Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
@@ -82,8 +82,8 @@ public static class Extensions {
 	}
 
 	public static DbContextOptionsBuilder EnableOrderByMemoryPatch(this DbContextOptionsBuilder builder,
-		ServerVersion version) {
-		if (version.Version < new Version(8, 0))
+		Version version) {
+		if (version < new Version(8, 0))
 			builder.AddInterceptors(new RemoveLastOrderByInterceptor());
 		return builder;
 	}
@@ -166,8 +166,12 @@ public static class Extensions {
 								unit = TimeSpan.TicksPerDay;
 								break;
 							default:
+								/*var typeName = property.DeclaringType switch {
+									IMutableEntityType entityType => entityType.Name,
+									IMutableComplexType complexType => complexType.Name,
+								}*/
 								throw new ArgumentOutOfRangeException("precision",
-									$"Invalid {nameof(TimeSpanPrecision)} defined for property {property.DeclaringEntityType.Name}.{property.Name}");
+									$"Invalid {nameof(TimeSpanPrecision)} defined for property {property.DeclaringType.DisplayName()}.{property.Name}");
 						}
 
 						if (precision.UseShorterUnit) {
